@@ -30,6 +30,7 @@
     </bean>
     
     <util:properties id="batchProps" location="classpath:batch.properties"/>
+	<util:properties id="alarmProps" location="classpath:alarmmsg.properties"/>
 	
 	<bean id="jobFailListener" class="com.navercorp.pinpoint.web.batch.JobFailListener"/>
 	
