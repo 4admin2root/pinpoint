@@ -91,6 +91,12 @@ public class XzxMessageSender implements AlarmMessageSender {
                     // TODO script parameter values
 
                     int exitVal = proc.waitFor();
+
+                    String temp = null ;
+                    while((temp=br.readLine())!=null) {
+                        logger.debug("send sms command result: {}", temp);
+                    }
+                    br.close();
                     logger.debug("Process exitValue: ", Integer.toString(exitVal));
                 }
             } catch (Throwable t)
@@ -114,6 +120,9 @@ public class XzxMessageSender implements AlarmMessageSender {
 
         properties.put("mail.smtp.port", email_ssl_smtpport);
         properties.put("mail.smtp.socketFactory.port", email_ssl_smtpport);
+        properties.setProperty("mail.smtp.socketFactory.fallback", "false");
+        properties.setProperty("mail.transport.protocol", "smtps");
+        properties.setProperty("mail.debug", "true");
 
         Session session = Session.getInstance(properties);
         session.setDebug(true);
@@ -139,7 +148,7 @@ public class XzxMessageSender implements AlarmMessageSender {
                 logger.info("send email : {}", message);
                 Address toAddress = new InternetAddress(mailaddr);
                 msg.setRecipient(MimeMessage.RecipientType.TO, toAddress);
-                Transport transport = session.getTransport("smtp");
+                Transport transport = session.getTransport();
                 transport.connect(email_ssl_smtpserver, email_username, email_password);
                 transport.sendMessage(msg, msg.getAllRecipients());
                 transport.close();
