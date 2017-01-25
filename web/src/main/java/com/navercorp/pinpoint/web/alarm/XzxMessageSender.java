@@ -23,12 +23,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 
-import java.io.BufferedReader;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.util.List;
 
-import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -36,11 +33,7 @@ import java.util.Properties;
 
 import javax.activation.DataHandler;
 import javax.activation.FileDataSource;
-import javax.mail.Address;
-import javax.mail.BodyPart;
-import javax.mail.Multipart;
-import javax.mail.Session;
-import javax.mail.Transport;
+import javax.mail.*;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMessage;
@@ -82,20 +75,21 @@ public class XzxMessageSender implements AlarmMessageSender {
                 Runtime rt = Runtime.getRuntime();
                 for (String phonenum : receivers) {
 
-                    // TODO loop phonenum
+
                     logger.debug("send sms script: {}",smssend_scriptfile + " " + phonenum + " '" + message + "'");
                     Process proc = rt.exec(smssend_scriptfile + " " + phonenum + " '" + message + "'");
+                    //OutputStream stdout = proc.getOutputStream();
                     InputStream stderr = proc.getErrorStream();
+                    //InputStream stdin = proc.getInputStream();
                     InputStreamReader isr = new InputStreamReader(stderr);
                     BufferedReader br = new BufferedReader(isr);
-                    // TODO script parameter values
 
-                    int exitVal = proc.waitFor();
 
                     String temp = null ;
                     while((temp=br.readLine())!=null) {
                         logger.debug("send sms command result: {}", temp);
                     }
+                    int exitVal = proc.waitFor();
                     br.close();
                     logger.debug("Process exitValue: ", Integer.toString(exitVal));
                 }
@@ -115,16 +109,19 @@ public class XzxMessageSender implements AlarmMessageSender {
         Properties properties = new Properties();
         properties.put("mail.smtp.host", email_ssl_smtpserver);
         properties.put("mail.smtp.auth", "true");
-        properties.put("mail.smtp.socketFactory.class", SSL_FACTORY);  //使用JSSE的SSL socketfactory来取代默认的socketfactory
-        properties.put("mail.smtp.socketFactory.fallback", "false");  // 只处理SSL的连接,对于非SSL的连接不做处理
+        properties.setProperty("mail.smtp.socketFactory.class", SSL_FACTORY);
+        properties.setProperty("mail.smtp.socketFactory.fallback", "false");
 
         properties.put("mail.smtp.port", email_ssl_smtpport);
-        properties.put("mail.smtp.socketFactory.port", email_ssl_smtpport);
-        properties.setProperty("mail.smtp.socketFactory.fallback", "false");
-        properties.setProperty("mail.transport.protocol", "smtps");
-        properties.setProperty("mail.debug", "true");
+        properties.setProperty("mail.smtp.socketFactory.port", email_ssl_smtpport.toString());
 
-        Session session = Session.getInstance(properties);
+
+//        Session session = Session.getInstance(properties,new javax.mail.Authenticator() {
+//            protected PasswordAuthentication getPasswordAuthentication() {
+//                return new PasswordAuthentication(email_username, email_password);
+//            }
+//        });
+        Session session = Session.getDefaultInstance(properties);
         session.setDebug(true);
         MimeMessage msg = new MimeMessage(session);
 
@@ -137,24 +134,25 @@ public class XzxMessageSender implements AlarmMessageSender {
             Address address = new InternetAddress(email_username);
             msg.setFrom(address);
             msg.setSubject("ALARM FROM PINPOINT");
-            BodyPart text = new MimeBodyPart();
-            text.setText(checker.getEmailMessage());
-            Multipart multipart = new MimeMultipart();
-            multipart.addBodyPart(text);
-            msg.setContent(multipart);
-            msg.saveChanges();
-            for (String mailaddr : receivers)
-            {
-                logger.info("send email : {}", message);
-                Address toAddress = new InternetAddress(mailaddr);
-                msg.setRecipient(MimeMessage.RecipientType.TO, toAddress);
-                Transport transport = session.getTransport();
-                transport.connect(email_ssl_smtpserver, email_username, email_password);
-                transport.sendMessage(msg, msg.getAllRecipients());
-                transport.close();
-
-
+            msg.setText(checker.getEmailMessage());
+            msg.setSentDate(new Date());
+            //msg.saveChanges();
+            ArrayList <Address> list = new ArrayList<Address>();
+            for (String mailaddr : receivers) {
+                 list.add(new InternetAddress(mailaddr));
             }
+            Address[] array = new Address[list.size()];
+            Address[] toAddress=list.toArray(array);
+
+            logger.info("send email : {}", message);
+
+            Transport transport = session.getTransport("smtp");
+            transport.connect(email_ssl_smtpserver, email_username, email_password);
+            msg.saveChanges();
+            transport.sendMessage(msg,toAddress);
+            transport.close();
+
+
         }catch (Exception e) {
             e.printStackTrace();
         }
