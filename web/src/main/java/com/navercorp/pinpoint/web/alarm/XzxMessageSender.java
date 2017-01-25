@@ -75,22 +75,28 @@ public class XzxMessageSender implements AlarmMessageSender {
                 Runtime rt = Runtime.getRuntime();
                 for (String phonenum : receivers) {
 
-
-                    logger.debug("send sms script: {}",smssend_scriptfile + " " + phonenum + " '" + message + "'");
-                    Process proc = rt.exec(smssend_scriptfile + " " + phonenum + " '" + message + "'");
-                    //OutputStream stdout = proc.getOutputStream();
+                    logger.debug("send sms script: {}",new String []{smssend_scriptfile,phonenum,message});
+                    Process proc = rt.exec(new String []{smssend_scriptfile,phonenum,message});
                     InputStream stderr = proc.getErrorStream();
-                    //InputStream stdin = proc.getInputStream();
+                    InputStream stdin = proc.getInputStream();
                     InputStreamReader isr = new InputStreamReader(stderr);
+                    InputStreamReader isi = new InputStreamReader(stdin);
                     BufferedReader br = new BufferedReader(isr);
-
+                    BufferedReader bi = new BufferedReader(isi);
 
                     String temp = null ;
                     while((temp=br.readLine())!=null) {
-                        logger.debug("send sms command result: {}", temp);
+                        logger.debug("br readline is: ",temp);
+                    }
+                    while((temp=bi.readLine())!=null) {
+                        logger.debug("bi readline is: ",temp);
                     }
                     int exitVal = proc.waitFor();
+                    System.out.println("exitval is: "+exitVal);
+                    isr.close();
+                    isi.close();
                     br.close();
+                    bi.close();
                     logger.debug("Process exitValue: ", Integer.toString(exitVal));
                 }
             } catch (Throwable t)
