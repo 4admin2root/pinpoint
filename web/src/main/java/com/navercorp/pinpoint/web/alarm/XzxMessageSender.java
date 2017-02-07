@@ -129,7 +129,7 @@ public class XzxMessageSender implements AlarmMessageSender {
 //            }
 //        });
         Session session = Session.getDefaultInstance(properties);
-        session.setDebug(true);
+        //session.setDebug(true);
         MimeMessage msg = new MimeMessage(session);
 
         if (receivers.size() == 0) {
