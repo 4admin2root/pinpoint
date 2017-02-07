@@ -17,6 +17,7 @@
 package com.navercorp.pinpoint.web.alarm;
 
 import com.navercorp.pinpoint.web.alarm.checker.AlarmChecker;
+import com.navercorp.pinpoint.web.alarm.vo.Rule;
 import com.navercorp.pinpoint.web.service.UserGroupService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -136,10 +137,11 @@ public class XzxMessageSender implements AlarmMessageSender {
         }
 
         String message = checker.getEmailMessage();
+        String chkname = checker.getRule().getCheckerName();
         try {
             Address address = new InternetAddress(email_username);
             msg.setFrom(address);
-            msg.setSubject("ALARM FROM PINPOINT");
+            msg.setSubject("ALARM FROM PINPOINT:"+chkname);
             msg.setText(checker.getEmailMessage());
             msg.setSentDate(new Date());
             //msg.saveChanges();
